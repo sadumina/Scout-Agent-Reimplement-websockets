@@ -4,6 +4,8 @@ import toast from "react-hot-toast";
 import { useInView } from "react-intersection-observer";
 import "./App.css";
 import ChatAssistant from "./ChatAssistant.jsx";
+import WorldBackground from "./WorldBackground.jsx";
+import { motion } from "framer-motion";
 
 const PRODUCTS = [
   { name: "PFAS" },
@@ -32,31 +34,36 @@ const PRODUCTS = [
   { name: "Haycarb Updates" },
 ];
 
-const API_BASE = "http://127.0.0.1:8000"; // 👈 FastAPI backend
+const API_BASE = "http://127.0.0.1:8000";
 
 function App() {
-  const [, setOpportunities] = useState([]);
+  const [opportunities, setOpportunities] = useState([]);
   const [filtered, setFiltered] = useState([]);
   const [filterType, setFilterType] = useState("all");
   const [selectedProduct, setSelectedProduct] = useState("PFAS");
   const [loading, setLoading] = useState(false);
   const [liveConnected, setLiveConnected] = useState(false);
 
-  // Infinite scroll states
-  const [visibleCount, setVisibleCount] = useState(8);
   const { ref, inView } = useInView();
 
-  // ✅ Fetch data (connected to backend period filter)
-  const fetchData = async (product = selectedProduct, period = filterType) => {
+  // ✅ Fetch with Pagination + ORDER (for oldest updates too!)
+  const fetchData = async (product = selectedProduct, period = filterType, skip = 0) => {
     try {
       setLoading(true);
+
       const res = await axios.get(
-        `${API_BASE}/opportunities?product=${encodeURIComponent(product)}&period=${period}`
+        `${API_BASE}/opportunities?product=${encodeURIComponent(product)}&period=${period}&skip=${skip}&limit=8&order=asc`
       );
-      const data = Array.isArray(res.data) ? res.data : [res.data];
-      setOpportunities(data);
-      setFiltered(data);
-      setVisibleCount(8);
+
+      const newData = Array.isArray(res.data) ? res.data : [res.data];
+
+      if (skip === 0) {
+        setOpportunities(newData);
+        setFiltered(newData);
+      } else {
+        setOpportunities((prev) => [...prev, ...newData]);
+        setFiltered((prev) => [...prev, ...newData]);
+      }
     } catch (err) {
       console.error("Error fetching opportunities:", err);
       toast.error("Failed to fetch data ❌");
@@ -65,49 +72,35 @@ function App() {
     }
   };
 
-  // ✅ WebSocket Setup (live updates)
+  // ✅ WebSocket Live Data
   useEffect(() => {
-    fetchData(selectedProduct, filterType);
+    fetchData(selectedProduct, filterType, 0);
 
     const ws = new WebSocket("ws://127.0.0.1:8000/ws/updates");
 
     ws.onopen = () => {
-      console.log("🟢 WebSocket connected");
       setLiveConnected(true);
       toast.success("Live connection established 🟢");
     };
 
     ws.onclose = () => {
-      console.log("🔴 WebSocket disconnected");
       setLiveConnected(false);
       toast.error("Connection lost 🔴");
     };
 
-    ws.onerror = (err) => {
-      console.error("⚠️ WebSocket error", err);
+    ws.onerror = () => {
       setLiveConnected(false);
       toast.error("WebSocket connection error ⚠️");
     };
 
     ws.onmessage = (event) => {
       const newData = JSON.parse(event.data);
+
       if (
         newData.topic === selectedProduct ||
         newData.topic?.toLowerCase().includes(selectedProduct.toLowerCase())
       ) {
-        toast.success(`🆕 ${newData.title}`, {
-          duration: 4000,
-          style: {
-            border: "1px solid #2E7D32",
-            background: "#f0fff4",
-            color: "#2E7D32",
-            fontWeight: 600,
-            padding: "8px 12px",
-          },
-          icon: "🌍",
-        });
-
-        // Insert new update at top
+        toast.success(`🆕 ${newData.title}`);
         setOpportunities((prev) => [newData, ...prev]);
         setFiltered((prev) => [newData, ...prev]);
       }
@@ -116,24 +109,15 @@ function App() {
     return () => ws.close();
   }, [selectedProduct, filterType]);
 
-  // ✅ Infinite Scroll logic
+  // ✅ Infinite Scroll Pagination Trigger
   useEffect(() => {
-    if (inView && !loading && visibleCount < filtered.length) {
-      const timer = setTimeout(() => setVisibleCount((prev) => prev + 6), 500);
-      return () => clearTimeout(timer);
+    if (inView && !loading) {
+      fetchData(selectedProduct, filterType, filtered.length);
     }
-  }, [inView, loading, filtered.length]);
+  }, [inView]);
 
-  // ✅ Format date nicely
-  const formatDate = (d) => {
-    if (!d) return "N/A";
-    const date = new Date(d);
-    return date.toLocaleDateString("en-US", {
-      year: "numeric",
-      month: "short",
-      day: "numeric",
-    });
-  };
+  const formatDate = (d) =>
+    d ? new Date(d).toLocaleDateString("en-US") : "N/A";
 
   const getFilterDisplayText = () =>
     filterType === "day"
@@ -144,17 +128,27 @@ function App() {
       ? "This Year"
       : "All Time";
 
-  // ✅ Render content with infinite scroll
   const renderContent = () => (
     <>
-      <div className="results-summary">
-        <strong>{filtered.length}</strong> opportunities for{" "}
+      <motion.div
+        className="results-summary"
+        initial={{ opacity: 0 }}
+        animate={{ opacity: 1 }}
+      >
+        <strong>{filtered.length}</strong> updates for{" "}
         <strong>{selectedProduct}</strong> ({getFilterDisplayText()})
-      </div>
+      </motion.div>
 
       <div className="card-grid">
-        {filtered.slice(0, visibleCount).map((opp, idx) => (
-          <div key={idx} className="card">
+        {filtered.map((opp, idx) => (
+          <motion.div
+            key={idx}
+            className="card"
+            initial={{ opacity: 0, y: 35 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.4 }}
+          >
             <h2>{opp.title}</h2>
             <div className="meta">
               <strong>Source:</strong> {opp.source || "Unknown"} <br />
@@ -162,127 +156,75 @@ function App() {
             </div>
             <p className="summary">{opp.summary || "No description"}</p>
             {opp.link && (
-              <a
-                href={opp.link}
-                target="_blank"
-                rel="noreferrer"
-                className="read-more"
-              >
+              <a href={opp.link} target="_blank" rel="noreferrer" className="read-more">
                 🔗 Read Full Article
               </a>
             )}
-          </div>
+          </motion.div>
         ))}
 
-        {visibleCount < filtered.length && (
-          <div ref={ref} className="loading-more">
-            ⏳ Loading more...
-          </div>
-        )}
+        <div ref={ref} className="loading-more">
+          {loading ? "⏳ Loading..." : ""}
+        </div>
       </div>
     </>
   );
 
   return (
-    <div className="app-container">
-      <header className="header">
-        <h1>HAYCARB Market Scout</h1>
-        <p>Stay ahead with real-time environmental & market intelligence</p>
+    <>
+      <WorldBackground />
 
-        <div
-          className={`live-status ${liveConnected ? "connected" : "disconnected"}`}
-        >
-          {liveConnected ? "🟢 Live Connected" : "🔴 Disconnected"}
-        </div>
+      <motion.div className="app-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+        <motion.header className="header" initial={{ y: -40 }} animate={{ y: 0 }}>
+          <h1>🌍 HAYCARB Market Scout</h1>
+          <p>Real-time environmental & market intelligence</p>
 
-        {/* Product Selector */}
-        <div className="product-filter">
-          <label htmlFor="product" className="dropdown-label">
-            Select Product:
-          </label>
-          <select
-            id="product"
-            className="dropdown"
-            value={selectedProduct}
-            onChange={(e) => setSelectedProduct(e.target.value)}
-          >
-            {PRODUCTS.map((p) => (
-              <option key={p.name} value={p.name}>
-                {p.name}
-              </option>
-            ))}
-          </select>
-        </div>
-
-        {/* Time Filters */}
-        <div className="filter-buttons">
-          <button
-            className={filterType === "all" ? "active" : ""}
-            onClick={() => {
-              setFilterType("all");
-              fetchData(selectedProduct, "all");
-            }}
-          >
-            🌎 All
-          </button>
-          <button
-            className={filterType === "day" ? "active" : ""}
-            onClick={() => {
-              setFilterType("day");
-              fetchData(selectedProduct, "day");
-            }}
-          >
-            📅 Today
-          </button>
-          <button
-            className={filterType === "month" ? "active" : ""}
-            onClick={() => {
-              setFilterType("month");
-              fetchData(selectedProduct, "month");
-            }}
-          >
-            🗓️ This Month
-          </button>
-          <button
-            className={filterType === "year" ? "active" : ""}
-            onClick={() => {
-              setFilterType("year");
-              fetchData(selectedProduct, "year");
-            }}
-          >
-            📆 This Year
-          </button>
-        </div>
-
-        {/* Refresh Button */}
-        <button
-          className="refresh-btn"
-          onClick={() => fetchData(selectedProduct, filterType)}
-          disabled={loading}
-        >
-          🔄 {loading ? "Refreshing..." : "Refresh"}
-        </button>
-      </header>
-
-      <main className="main-content">
-        {loading ? (
-          <div className="loading">⏳ Loading {selectedProduct} updates...</div>
-        ) : filtered.length === 0 ? (
-          <div className="empty">
-            <h3>No updates found</h3>
-            <p>
-              No updates for <strong>{selectedProduct}</strong> (
-              {getFilterDisplayText()}).
-            </p>
+          <div className={`live-status ${liveConnected ? "connected" : "disconnected"}`}>
+            {liveConnected ? "🟢 Live Connected" : "🔴 Disconnected"}
           </div>
-        ) : (
-          renderContent()
-        )}
-      </main>
 
-      {/* Smart AI Chat Assistant */}
-      <ChatAssistant selectedProduct={selectedProduct} />
-    </div>
+          {/* Product Selector */}
+          <div className="product-filter">
+            <label className="dropdown-label">Select Product:</label>
+            <select
+              className="dropdown"
+              value={selectedProduct}
+              onChange={(e) => {
+                setSelectedProduct(e.target.value);
+                fetchData(e.target.value, filterType, 0);
+              }}
+            >
+              {PRODUCTS.map((p) => (
+                <option key={p.name}>{p.name}</option>
+              ))}
+            </select>
+          </div>
+
+          {/* Filter Buttons */}
+          <div className="filter-buttons">
+            {["all", "day", "month", "year"].map((type) => (
+              <button
+                key={type}
+                className={filterType === type ? "active" : ""}
+                onClick={() => fetchData(selectedProduct, type, 0)}
+              >
+                {type === "all"
+                  ? "🌎 All"
+                  : type === "day"
+                  ? "📅 Today"
+                  : type === "month"
+                  ? "🗓️ This Month"
+                  : "📆 This Year"}
+              </button>
+            ))}
+          </div>
+        </motion.header>
+
+        <main className="main-content">{renderContent()}</main>
+
+        <ChatAssistant selectedProduct={selectedProduct} />
+      </motion.div>
+    </>
   );
 }
 

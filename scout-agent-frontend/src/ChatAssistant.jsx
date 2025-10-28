@@ -6,6 +6,7 @@ function ChatAssistant({ selectedProduct }) {
     {
       role: "assistant",
       content: `👋 Hi there! I'm your Haycarb AI Assistant. Ask me anything about **${selectedProduct}**, market trends, or global insights.`,
+      timestamp: new Date(),
     },
   ]);
   const [input, setInput] = useState("");
@@ -21,6 +22,7 @@ function ChatAssistant({ selectedProduct }) {
         {
           role: "assistant",
           content: `👋 Hi there! I'm your Haycarb AI Assistant. Ask me anything about **${selectedProduct}**, market trends, or global insights.`,
+          timestamp: new Date(),
         },
       ]);
     }
@@ -40,23 +42,22 @@ function ChatAssistant({ selectedProduct }) {
     }
   }, [open]);
 
-  // Format message content (basic markdown support)
+  // Basic markdown formatting
   const formatMessage = (content) => {
-    // Bold text
-    let formatted = content.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
-    // Italic text
-    formatted = formatted.replace(/\*(.*?)\*/g, '<em>$1</em>');
-    // Line breaks
-    formatted = formatted.replace(/\n/g, '<br/>');
-    
+    let formatted = content
+      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
+      .replace(/\*(.*?)\*/g, "<em>$1</em>")
+      .replace(/\n/g, "<br/>");
     return <span dangerouslySetInnerHTML={{ __html: formatted }} />;
   };
 
-  // Send message to backend
   const sendMessage = async () => {
     if (!input.trim() || loading) return;
-
-    const userMessage = { role: "user", content: input.trim() };
+    const userMessage = {
+      role: "user",
+      content: input.trim(),
+      timestamp: new Date(),
+    };
     setMessages((prev) => [...prev, userMessage]);
     setInput("");
     setLoading(true);
@@ -71,16 +72,16 @@ function ChatAssistant({ selectedProduct }) {
         }),
       });
 
-      if (!res.ok) {
-        throw new Error(`HTTP error! status: ${res.status}`);
-      }
+      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
 
       const data = await res.json();
       const aiMessage = {
         role: "assistant",
-        content: data.response || "🤖 Sorry, I couldn't find relevant information.",
+        content:
+          data.response ||
+          "🤖 Sorry, I couldn't find relevant information for that.",
+        timestamp: new Date(),
       };
-
       setMessages((prev) => [...prev, aiMessage]);
     } catch (err) {
       console.error("Chat error:", err);
@@ -89,7 +90,8 @@ function ChatAssistant({ selectedProduct }) {
         {
           role: "assistant",
           content:
-            "⚠️ Sorry, I couldn't process your request. Please ensure the backend is running and try again.",
+            "⚠️ Sorry, I couldn't process your request. Please make sure the backend is running.",
+          timestamp: new Date(),
         },
       ]);
     } finally {
@@ -104,13 +106,17 @@ function ChatAssistant({ selectedProduct }) {
     }
   };
 
-  const toggleChat = () => {
-    setOpen(!open);
-  };
+  const toggleChat = () => setOpen(!open);
+
+  const formatTime = (time) =>
+    new Date(time).toLocaleTimeString([], {
+      hour: "2-digit",
+      minute: "2-digit",
+    });
 
   return (
     <>
-      {/* 🟢 Floating Toggle Button */}
+      {/* 💬 Floating Toggle Button */}
       <button
         className="chat-toggle-btn"
         onClick={toggleChat}
@@ -120,24 +126,36 @@ function ChatAssistant({ selectedProduct }) {
         {open ? "✕" : "💬"}
       </button>
 
-      {/* 💬 Floating Chat Window */}
+      {/* 🪄 Floating Chat Window */}
       {open && (
-        <div className="floating-chat-window" role="dialog" aria-label="Chat Assistant">
+        <div
+          className="floating-chat-window"
+          role="dialog"
+          aria-label="Chat Assistant"
+        >
           <div className="chat-header">
-            <div>🤖 Haycarb AI Assistant</div>
-            <div className="subtext">
-              Ask about <strong>{selectedProduct}</strong> insights
+            <div className="header-content">
+              <img
+                src="C:\Users\Sadumina.Rathnayaka\Desktop\scout agent frontend\scout-agent-frontend\src\assets\images.png"
+                alt="Haycarb AI"
+                className="chat-avatar"
+              />
+              <div>
+                <div className="chat-title">Haycarb AI Assistant</div>
+                <div className="subtext">
+                  Discuss <strong>{selectedProduct}</strong> insights
+                </div>
+              </div>
             </div>
           </div>
 
           <div className="chat-body" role="log" aria-live="polite">
             {messages.map((msg, i) => (
-              <div
-                key={i}
-                className={`message ${msg.role}`}
-                role={msg.role === "user" ? "article" : "article"}
-              >
+              <div key={i} className={`message ${msg.role}`}>
                 {formatMessage(msg.content)}
+                <div className="meta">
+                  {msg.role === "user" ? "You" : "AI"} · {formatTime(msg.timestamp)}
+                </div>
               </div>
             ))}
 
@@ -166,11 +184,12 @@ function ChatAssistant({ selectedProduct }) {
               aria-label="Chat message input"
             />
             <button
+              className="send-btn"
               onClick={sendMessage}
               disabled={loading || !input.trim()}
               aria-label="Send message"
             >
-              🚀 Send
+              <i className="fa fa-paper-plane"></i>
             </button>
           </div>
         </div>
