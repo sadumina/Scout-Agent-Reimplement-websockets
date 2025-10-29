@@ -1,4 +1,5 @@
-// App.jsx
+// App.jsx ✅ FINAL
+
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import toast from "react-hot-toast";
@@ -8,25 +9,20 @@ import ChatAssistant from "./ChatAssistant.jsx";
 import WorldBackground from "./WorldBackground.jsx";
 import { motion } from "framer-motion";
 
-/*
-|--------------------------------------------------------------------------
-| ✅ Auto-detect backend URL (LOCAL + RENDER)
-|--------------------------------------------------------------------------
-*/
+/* -----------------------------------------------
+   ✅ Auto detect backend (local + render)
+------------------------------------------------*/
 const API_BASE =
   import.meta.env.MODE === "development"
     ? "http://127.0.0.1:8000"
-    : "https://scout-agent-new-2.onrender.com";
+    : "https://scout-agent-new-3.onrender.com";
 
-/*
-|--------------------------------------------------------------------------
-| ✅ Auto WebSocket (ws / wss)
-|--------------------------------------------------------------------------
-*/
-const WS_URL =
-  API_BASE.startsWith("https")
-    ? API_BASE.replace("https", "wss") + "/ws/updates"
-    : API_BASE.replace("http", "ws") + "/ws/updates";
+/* -----------------------------------------------
+   ✅ Auto generate WS URL (ws / wss)
+------------------------------------------------*/
+const WS_URL = API_BASE.startsWith("https")
+  ? API_BASE.replace("https", "wss") + "/ws/updates"
+  : API_BASE.replace("http", "ws") + "/ws/updates";
 
 const PRODUCTS = [
   { name: "PFAS" },
@@ -65,7 +61,9 @@ function App() {
 
   const { ref, inView } = useInView();
 
-  // 🚀 Fetch updates (pagination + filter)
+  /* -----------------------------------------------------------
+     🔥 Fetch Data (Pagination + Filter)
+  ------------------------------------------------------------*/
   const fetchData = async (product = selectedProduct, period = filterType, skip = 0) => {
     try {
       setLoading(true);
@@ -86,14 +84,16 @@ function App() {
         setFiltered((prev) => [...prev, ...newData]);
       }
     } catch (err) {
-      console.error("Error fetching opportunities:", err);
-      toast.error("Failed to fetch data ❌");
+      console.log("❌ Fetch error:", err);
+      toast.error("Failed to fetch updates");
     } finally {
       setLoading(false);
     }
   };
 
-  // 🔴 WebSocket Live Updates
+  /* -----------------------------------------------------------
+     ✅ WebSocket Live Updates
+  ------------------------------------------------------------*/
   useEffect(() => {
     fetchData(selectedProduct, filterType, 0);
 
@@ -101,42 +101,38 @@ function App() {
 
     ws.onopen = () => {
       setLiveConnected(true);
-      toast.success("Live connection established 🟢");
+      toast.success("🟢 Live updates connected");
     };
 
     ws.onclose = () => {
       setLiveConnected(false);
-      toast.error("Connection lost 🔴");
+      toast.error("🔴 Live connection lost");
     };
 
     ws.onerror = () => {
       setLiveConnected(false);
-      toast.error("WebSocket connection error ⚠️");
+      toast.error("⚠ WebSocket Error");
     };
 
     ws.onmessage = (event) => {
-      try {
-        const update = JSON.parse(event.data);
+      const update = JSON.parse(event.data);
 
-        if (!update.topic) return;
-
-        if (
-          update.topic === selectedProduct ||
-          update.topic?.toLowerCase().includes(selectedProduct.toLowerCase())
-        ) {
-          toast.success(`🆕 Live update received`);
-          setOpportunities((prev) => [update, ...prev]);
-          setFiltered((prev) => [update, ...prev]);
-        }
-      } catch (e) {
-        console.error("Invalid WS message:", e);
+      if (
+        update.topic === selectedProduct ||
+        update.topic?.toLowerCase().includes(selectedProduct.toLowerCase())
+      ) {
+        toast.success("🆕 New live update");
+        setOpportunities((prev) => [update, ...prev]);
+        setFiltered((prev) => [update, ...prev]);
       }
     };
 
     return () => ws.close();
   }, [selectedProduct, filterType]);
 
-  // 📌 Infinite Scroll
+  /* -----------------------------------------------------------
+     📌 Infinite Scroll
+  ------------------------------------------------------------*/
   useEffect(() => {
     if (inView && !loading) {
       fetchData(selectedProduct, filterType, filtered.length);
@@ -146,46 +142,12 @@ function App() {
   const formatDate = (d) =>
     d ? new Date(d).toLocaleDateString("en-US") : "N/A";
 
-  const getFilterDisplayText = () =>
-    filterType === "day"
-      ? "Today"
-      : filterType === "month"
-      ? "This Month"
-      : filterType === "year"
-      ? "This Year"
-      : "All Time";
-
-  // UI Component
-  const renderContent = () => (
-    <>
-      <motion.div className="results-summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
-        <strong>{filtered.length}</strong> updates for <strong>{selectedProduct}</strong>{" "}
-        ({getFilterDisplayText()})
-      </motion.div>
-
-      <div className="card-grid">
-        {filtered.map((opp, idx) => (
-          <motion.div key={idx} className="card" initial={{ opacity: 0, y: 35 }} whileInView={{ opacity: 1, y: 0 }} viewport={{ once: true }} transition={{ duration: 0.4 }}>
-            <h2>{opp.title}</h2>
-            <div className="meta">
-              <strong>Source:</strong> {opp.source || "Unknown"} <br />
-              <strong>Date:</strong> {formatDate(opp.date)}
-            </div>
-            <p className="summary">{opp.summary || "No description"}</p>
-            {opp.link && (
-              <a href={opp.link} target="_blank" rel="noreferrer" className="read-more">
-                🔗 Read Full Article
-              </a>
-            )}
-          </motion.div>
-        ))}
-
-        <div ref={ref} className="loading-more">
-          {loading ? "⏳ Loading..." : ""}
-        </div>
-      </div>
-    </>
-  );
+  const displayFilter = {
+    day: "Today",
+    month: "This Month",
+    year: "This Year",
+    all: "All Time",
+  };
 
   return (
     <>
@@ -200,7 +162,7 @@ function App() {
             {liveConnected ? "🟢 Live Connected" : "🔴 Disconnected"}
           </div>
 
-          {/* Product Dropdown */}
+          {/* ✅ Dropdown works on phone */}
           <div className="product-filter">
             <label className="dropdown-label">Select Product:</label>
             <select
@@ -217,23 +179,46 @@ function App() {
             </select>
           </div>
 
-          {/* Filter Buttons */}
           <div className="filter-buttons">
             {["all", "day", "month", "year"].map((type) => (
-              <button key={type} className={filterType === type ? "active" : ""} onClick={() => fetchData(selectedProduct, type, 0)}>
-                {type === "all"
-                  ? "🌎 All"
-                  : type === "day"
-                  ? "📅 Today"
-                  : type === "month"
-                  ? "🗓️ This Month"
-                  : "📆 This Year"}
+              <button
+                key={type}
+                className={filterType === type ? "active" : ""}
+                onClick={() => fetchData(selectedProduct, type, 0)}
+              >
+                {displayFilter[type]}
               </button>
             ))}
           </div>
         </motion.header>
 
-        <main className="main-content">{renderContent()}</main>
+        <main className="main-content">
+          <motion.div className="results-summary" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <strong>{filtered.length}</strong> updates for{" "}
+            <strong>{selectedProduct}</strong> ({displayFilter[filterType]})
+          </motion.div>
+
+          <div className="card-grid">
+            {filtered.map((opp, idx) => (
+              <motion.div key={idx} className="card">
+                <h2>{opp.title}</h2>
+                <div className="meta">
+                  <strong>Source:</strong> {opp.source || "Unknown"} <br />
+                  <strong>Date:</strong> {formatDate(opp.date)}
+                </div>
+                <p className="summary">{opp.summary || "No description"}</p>
+
+                <a href={opp.link} target="_blank" rel="noopener noreferrer" className="read-more">
+                  🔗 Read Full Article
+                </a>
+              </motion.div>
+            ))}
+
+            <div ref={ref} className="loading-more">
+              {loading ? "⏳ Loading..." : ""}
+            </div>
+          </div>
+        </main>
 
         <ChatAssistant selectedProduct={selectedProduct} />
       </motion.div>
