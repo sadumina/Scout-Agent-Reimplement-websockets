@@ -1,466 +1,279 @@
-/* ========================= */
-/* 🌿 GENERAL LAYOUT & THEME */
-/* ========================= */
-
-:root {
-  --haycarb-green: #2e7d32;
-  --haycarb-green-dark: #1b5e20;
-  --accent-bg: #f1f8f4;
-  --text: #1e293b;
-  --subtext: #475569;
-  --card-bg: #ffffff;
-  --shadow: rgba(0, 0, 0, 0.08);
-}
-
+/* ✅ GLOBAL DARK MODE */
 body {
-  font-family: "Inter", "Segoe UI", Arial, sans-serif;
-  background-color: #f7f9fb;
   margin: 0;
-  padding: 0;
-  color: var(--text);
+  font-family: "Inter", sans-serif;
+  background: #000;            /* 🌑 FULL PAGE BLACK */
+  color: #e6e6e6;
+  overflow-x: hidden;
 }
 
+/* ✅ World Background (3D Globe area) */
+.world-bg {
+  width: 100%;
+  height: 300px;               /* Adjust globe visibility */
+  position: relative;
+  overflow: hidden;
+  z-index: 0;
+  background: radial-gradient(circle at center,
+    rgba(0, 255, 140, 0.12),
+    rgba(0, 0, 0, 1) 80%
+  );
+}
+
+/* Make the ThreeJS Canvas fill the space */
+.world-bg canvas {
+  width: 100% !important;
+  height: 100% !important;
+  display: block;
+}
+
+
+/* ✅ Page Container */
 .app-container {
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  min-height: 100vh;
+  max-width: 1080px;
+  margin: 0 auto;
+  padding: 40px 20px;
+  z-index: 10;
+  position: relative;
 }
 
-/* ===================== */
-/* 🌟 HEADER SECTION     */
-/* ===================== */
-
+/* ✅ Header */
 .header {
   text-align: center;
-  padding: 3rem 1rem 2rem;
-  background: white;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
-  width: 100%;
-  max-width: 1100px;
-  border-radius: 0 0 20px 20px;
+  padding: 25px;
+  background: rgba(20, 20, 20, 0.6);      /* 🟢 Dark transparent card */
+  backdrop-filter: blur(12px);
+  border-radius: 18px;
+  box-shadow: 0px 4px 18px rgba(0, 255, 100, 0.15);
+  margin-bottom: 35px;
+  animation: fadeIn 0.8s ease;
 }
 
 .header h1 {
-  color: var(--haycarb-green);
-  font-size: 2.2rem;
-  margin-bottom: 0.3rem;
+  font-size: 2.7rem;
+  font-weight: 700;
+  margin-bottom: 5px;
+  display: flex;
+  justify-content: center;
+  gap: 12px;
+  color: #00ff95;                           /* Neon green title */
 }
 
 .header p {
   font-size: 1.1rem;
-  color: var(--subtext);
-  margin-bottom: 1.8rem;
+  opacity: 0.8;
+  color: #b7ffcf;
 }
 
-/* ======================= */
-/* 🔴🟢 LIVE STATUS BADGE  */
-/* ======================= */
-
+/* ✅ Live Connection */
 .live-status {
-  font-weight: 600;
-  margin-bottom: 1rem;
-  font-size: 1rem;
-  transition: opacity 0.3s ease;
+  margin-top: 10px;
+  padding: 6px 14px;
+  display: inline-block;
+  border-radius: 50px;
+  font-size: 0.85rem;
+  font-weight: bold;
 }
 
 .live-status.connected {
-  color: var(--haycarb-green);
-  animation: pulse 1.5s infinite;
+  background: #0f3;
+  color: #002b10;
 }
 
 .live-status.disconnected {
-  color: #c62828;
+  background: #ff6b6b;
+  color: #300;
 }
 
-@keyframes pulse {
-  0%, 100% {
-    opacity: 1;
-  }
-  50% {
-    opacity: 0.5;
-  }
-}
-
-/* ===================== */
-/* 🌱 PRODUCT DROPDOWN   */
-/* ===================== */
-
+/* ✅ Dropdown area */
 .product-filter {
-  margin-bottom: 1.2rem;
-}
-
-.dropdown-label {
-  font-weight: 600;
-  margin-right: 0.5rem;
+  display: flex;
+  justify-content: center;
+  gap: 8px;
+  margin-top: 25px;
 }
 
 .dropdown {
-  border: 2px solid var(--haycarb-green);
-  background: #fff;
+  padding: 12px;
+  width: 250px;
   border-radius: 8px;
-  padding: 0.5rem 0.75rem;
+  border: 2px solid #3b3b3b;
+  background: #111;
+  color: #fff;
   font-size: 1rem;
-  transition: all 0.2s ease;
 }
 
-.dropdown:hover,
-.dropdown:focus {
-  border-color: var(--haycarb-green-dark);
-  box-shadow: 0 0 0 3px rgba(46, 125, 50, 0.15);
-}
-
-.dropdown:focus {
-  border-color: #2e7d32;
-  box-shadow: 0 0 0 2px rgba(46, 125, 50, 0.2);
-}
-
-/* ====================== */
-/* 🧭 FILTER BUTTONS      */
-/* ====================== */
-
+/* ✅ Buttons */
 .filter-buttons {
   display: flex;
   justify-content: center;
-  gap: 1rem;
-  flex-wrap: wrap;
-  margin-bottom: 1rem;
+  gap: 12px;
+  margin-top: 18px;
 }
 
 .filter-buttons button {
-  padding: 0.6rem 1.2rem;
-  font-size: 0.95rem;
-  font-weight: 600;
+  padding: 10px 20px;
   border-radius: 10px;
-  border: 2px solid transparent;
-  background-color: #f1f5f9;
-  color: var(--text);
-  cursor: pointer;
-  transition: all 0.2s ease;
-  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.04);
-}
-
-.filter-buttons button:hover {
-  background-color: #e2e8f0;
-}
-
-.filter-buttons .active {
-  background-color: var(--haycarb-green);
-  color: white;
-  border: 2px solid var(--haycarb-green-dark);
-  box-shadow: 0 3px 6px rgba(46, 125, 50, 0.4);
-  transform: translateY(1px);
-}
-
-/* ======================== */
-/* 🔁 REFRESH BUTTON        */
-/* ======================== */
-
-.refresh-btn {
-  padding: 0.6rem 1.2rem;
-  background-color: var(--haycarb-green-dark);
-  color: white;
   border: none;
-  border-radius: 8px;
-  font-weight: 600;
   cursor: pointer;
-  margin-top: 0.5rem;
-  transition: all 0.3s ease;
+  background: #222;
+  color: white;
+  font-size: 0.95rem;
+  box-shadow: 0px 2px 6px rgba(0,255,165,0.3);
+  transition: 0.2s ease;
 }
 
-.refresh-btn:hover {
-  background-color: var(--haycarb-green);
+.filter-buttons button.active {
+  background: #00ff7b;
+  color: #000;
+  font-weight: bold;
 }
 
-/* ======================= */
-/* 📊 RESULTS HEADER       */
-/* ======================= */
-
-.results-summary {
-  text-align: center;
-  margin-top: 2rem;
-  font-size: 1.2rem;
-  color: var(--haycarb-green-dark);
-}
-
-/* ======================== */
-/* 🗂️ CARD GRID & CARDS     */
-/* ======================== */
-
+/* ✅ Cards (News Articles) */
 .card-grid {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  gap: 1.5rem;
-  padding: 2rem;
-  width: 100%;
-  max-width: 1100px;
+  grid-template-columns: repeat(auto-fit, minmax(290px, 1fr));
+  gap: 20px;
+  padding-top: 20px;
 }
 
 .card {
-  background-color: var(--card-bg);
+  background: rgba(30, 30, 30, 0.65);
+  backdrop-filter: blur(6px);
+  padding: 22px;
   border-radius: 16px;
-  padding: 1.5rem;
-  box-shadow: 0 4px 14px var(--shadow);
-  transition: transform 0.2s ease, box-shadow 0.2s ease;
+  box-shadow: 0px 4px 16px rgba(0,255,150,0.15);
+  transition: 0.2s ease;
+  border: 1px solid rgba(0,255,150,0.2);
 }
 
 .card:hover {
-  transform: translateY(-4px);
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.08);
+  transform: translateY(-6px);
+  box-shadow: 0px 10px 25px rgba(0,255,150,0.25);
 }
 
 .card h2 {
-  font-size: 1.25rem;
-  color: var(--haycarb-green-dark);
-  margin-bottom: 0.6rem;
-}
-
-.card .meta {
-  font-size: 0.9rem;
-  color: #64748b;
-  margin-bottom: 0.5rem;
-  line-height: 1.4;
+  font-size: 1.2rem;
+  margin-bottom: 6px;
+  color: #00ff95;
 }
 
 .card .summary {
-  font-size: 0.95rem;
-  color: #334155;
-  margin-bottom: 1rem;
+  color: #e6e6e6;
+  font-size: 0.9rem;
+  margin-top: 8px;
   line-height: 1.5;
 }
 
-.card .read-more {
+.read-more {
+  margin-top: 12px;
+  display: inline-block;
   text-decoration: none;
-  color: var(--haycarb-green);
-  font-weight: 600;
+  color: #33c8ff;
+  font-weight: bold;
 }
 
-.card .read-more:hover {
-  text-decoration: underline;
-}
-
-/* ================================ */
-/* 📰 JACOBI / HAYCARB SPECIALS     */
-/* ================================ */
-
-.jacobi-haycarb-section h2,
-.jacobi-profile-section h2 {
-  color: var(--haycarb-green-dark);
+/* ✅ Loading */
+.loading-more {
   text-align: center;
-  margin-top: 1.5rem;
-  margin-bottom: 1rem;
+  font-size: 1rem;
+  color: #aaa;
 }
 
-.updates-list {
-  list-style: none;
-  padding: 0;
-  max-width: 700px;
-  margin: 1rem auto;
+
+/* ✅ Smooth Fade animation */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(10px);}
+  to { opacity: 1; transform: translateY(0);}
+}
+/* ✅ --- GLOBAL (already exists) --- */
+
+
+/* ✅ RESPONSIVE FIXES */
+@media (max-width: 1024px) {
+  .app-container {
+    max-width: 900px;
+    padding: 30px 16px;
+  }
+
+  .header h1 {
+    font-size: 2.2rem;
+  }
 }
 
-.updates-list li {
-  margin-bottom: 0.8rem;
-  font-size: 1.05rem;
-}
+@media (max-width: 768px) {
+  .world-bg {
+    height: 220px;  /* Smaller globe on mobile */
+  }
 
-.updates-list a {
-  color: var(--haycarb-green);
-  text-decoration: none;
-}
-
-.updates-list a:hover {
-  text-decoration: underline;
-}
-
-/* ======================= */
-/* 🧾 PROFILE CARD         */
-/* ======================= */
-
-.profile-card {
-  background: white;
-  border-radius: 12px;
-  padding: 2rem;
-  max-width: 650px;
-  margin: 0 auto;
-  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.08);
-  line-height: 1.6;
-}
-
-.profile-card h3 {
-  color: var(--haycarb-green-dark);
-  margin-bottom: 0.8rem;
-}
-
-/* ======================= */
-/* ⚙️ STATE MESSAGES       */
-/* ======================= */
-
-.loading {
-  text-align: center;
-  font-size: 1.2rem;
-  color: var(--subtext);
-  margin-top: 2rem;
-}
-
-.empty {
-  text-align: center;
-  padding: 3rem 1rem;
-  color: #64748b;
-}
-
-/* ============================= */
-/* 📱 RESPONSIVE DESIGN ENHANCED */
-/* ============================= */
-
-/* Small Devices (Phones < 600px) */
-@media (max-width: 600px) {
   .header {
-    padding: 1.5rem 1rem;
+    padding: 18px;
+  }
+
+  .header h1 {
+    font-size: 1.9rem;
+  }
+
+  .product-filter {
+    flex-direction: column;
+    align-items: center;
+    width: 100%;
+  }
+
+  .dropdown {
+    width: 100%;
+    max-width: 320px;
+  }
+
+  .filter-buttons {
+    flex-wrap: wrap;
+    gap: 10px;
+  }
+
+  .filter-buttons button {
+    flex: 1;
+    min-width: 130px;
+  }
+}
+
+@media (max-width: 480px) {
+  .app-container {
+    padding: 15px;
   }
 
   .header h1 {
     font-size: 1.6rem;
-    line-height: 1.3;
   }
 
   .header p {
     font-size: 0.9rem;
   }
 
-  .product-filter {
-    flex-direction: column;
-    align-items: center;
-    width: 100%;
+  .world-bg {
+    height: 190px;
   }
 
   .dropdown {
-    width: 90%;
-    margin-top: 0.5rem;
+    width: 100%;
+    max-width: 260px;
+    font-size: 0.9rem;
   }
 
   .filter-buttons {
     flex-direction: column;
-    gap: 0.6rem;
-    width: 100%;
+    gap: 8px;
   }
 
   .filter-buttons button {
-    width: 90%;
-  }
-
-  .refresh-btn {
-    width: 90%;
-    margin-top: 1rem;
+    width: 100%;
+    font-size: 0.9rem;
   }
 
   .card-grid {
-    grid-template-columns: 1fr;
-    padding: 1rem;
+    grid-template-columns: 1fr; /* Full width cards on small screens */
   }
 
   .card {
-    padding: 1rem;
+    padding: 18px;
   }
-
-  .profile-card {
-    width: 90%;
-    padding: 1.2rem;
-  }
-
-  .results-summary {
-    font-size: 1rem;
-  }
-}
-
-/* Medium Devices (Tablets: 600px–900px) */
-@media (min-width: 601px) and (max-width: 900px) {
-  .header {
-    padding: 2.5rem 1.5rem;
-  }
-
-  .header h1 {
-    font-size: 2rem;
-  }
-
-  .product-filter {
-    flex-direction: column;
-    align-items: center;
-  }
-
-  .dropdown {
-    width: 80%;
-  }
-
-  .filter-buttons {
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-
-  .card-grid {
-    grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
-    gap: 1.2rem;
-  }
-
-  .profile-card {
-    width: 85%;
-  }
-}
-
-/* Large Devices (Desktop > 900px) */
-@media (min-width: 901px) and (max-width: 1400px) {
-  .header h1 {
-    font-size: 2.4rem;
-  }
-
-  .card-grid {
-    grid-template-columns: repeat(auto-fit, minmax(320px, 1fr));
-  }
-
-  .app-container {
-    padding: 0 2rem;
-  }
-}
-
-/* Ultra-Wide Screens (1440px and above) */
-@media (min-width: 1440px) {
-  .app-container {
-    max-width: 1400px;
-    margin: 0 auto;
-  }
-
-  .header h1 {
-    font-size: 2.8rem;
-  }
-
-  .header p {
-    font-size: 1.1rem;
-  }
-
-  /* 🌍 3D Globe Background Layer */
-.world-bg {
-  position: fixed;
-  top: 0;
-  left: 0;
-  width: 100%;
-  height: 100%;
-  z-index: 0;
-  overflow: hidden;
-}
-
-.app-container {
-  position: relative;
-  z-index: 2;
-  backdrop-filter: blur(16px) saturate(140%);
-  background: rgba(255, 255, 255, 0.2);
-  border-radius: 16px;
-  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.2);
-  padding-bottom: 5rem;
-}
-
-body {
-  background-color: #0b0f15;
-  color: white;
-  overflow-x: hidden;
-}
-
 }

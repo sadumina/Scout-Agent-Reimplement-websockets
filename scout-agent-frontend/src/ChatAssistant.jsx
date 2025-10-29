@@ -1,201 +1,190 @@
+// ChatAssistant.jsx
 import React, { useState, useRef, useEffect } from "react";
+import axios from "axios";
+import { MessageCircle, X, Send, Bot, User, Minimize2 } from "lucide-react";
 import "./ChatAssistant.css";
 
-function ChatAssistant({ selectedProduct }) {
+const API_BASE = "http://127.0.0.1:8000";
+
+export default function ChatAssistant({ selectedProduct }) {
   const [messages, setMessages] = useState([
     {
       role: "assistant",
-      content: `👋 Hi there! I'm your Haycarb AI Assistant. Ask me anything about **${selectedProduct}**, market trends, or global insights.`,
-      timestamp: new Date(),
+      content: `Hi there! I'm your Haycarb AI Assistant. Ask me anything about ${selectedProduct}, trends, or global insights.`,
     },
   ]);
   const [input, setInput] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [open, setOpen] = useState(false);
-  const chatEndRef = useRef(null);
+  const [isOpen, setIsOpen] = useState(false);
+  const [isTyping, setIsTyping] = useState(false);
+  const chatRef = useRef(null);
   const inputRef = useRef(null);
 
   // Update welcome message when product changes
   useEffect(() => {
-    if (messages.length === 1) {
-      setMessages([
-        {
-          role: "assistant",
-          content: `👋 Hi there! I'm your Haycarb AI Assistant. Ask me anything about **${selectedProduct}**, market trends, or global insights.`,
-          timestamp: new Date(),
-        },
-      ]);
-    }
+    setMessages([
+      {
+        role: "assistant",
+        content: `Hi there! I'm your Haycarb AI Assistant. Ask me anything about ${selectedProduct}, trends, or global insights.`,
+      },
+    ]);
   }, [selectedProduct]);
 
-  // Auto-scroll to bottom when new message arrives
   useEffect(() => {
-    if (chatEndRef.current) {
-      chatEndRef.current.scrollIntoView({ behavior: "smooth" });
+    if (chatRef.current) {
+      chatRef.current.scrollTo({
+        top: chatRef.current.scrollHeight,
+        behavior: "smooth",
+      });
     }
-  }, [messages, loading]);
+  }, [messages]);
 
-  // Focus input when chat opens
   useEffect(() => {
-    if (open && inputRef.current) {
-      setTimeout(() => inputRef.current.focus(), 100);
+    if (isOpen && inputRef.current) {
+      inputRef.current.focus();
     }
-  }, [open]);
+  }, [isOpen]);
 
-  // Basic markdown formatting
-  const formatMessage = (content) => {
-    let formatted = content
-      .replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>")
-      .replace(/\*(.*?)\*/g, "<em>$1</em>")
-      .replace(/\n/g, "<br/>");
-    return <span dangerouslySetInnerHTML={{ __html: formatted }} />;
-  };
+  const handleSend = async () => {
+    if (!input.trim()) return;
 
-  const sendMessage = async () => {
-    if (!input.trim() || loading) return;
-    const userMessage = {
-      role: "user",
-      content: input.trim(),
-      timestamp: new Date(),
-    };
+    const userMessage = { role: "user", content: input };
     setMessages((prev) => [...prev, userMessage]);
+    const userInput = input;
     setInput("");
-    setLoading(true);
+    setIsTyping(true);
 
     try {
-      const res = await fetch("http://127.0.0.1:8000/chat", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          message: input.trim(),
-          product: selectedProduct,
-        }),
+      const res = await axios.post(`${API_BASE}/chat`, {
+        message: userInput,
+        product: selectedProduct,
       });
 
-      if (!res.ok) throw new Error(`HTTP error! status: ${res.status}`);
-
-      const data = await res.json();
-      const aiMessage = {
+      const botReply = {
         role: "assistant",
-        content:
-          data.response ||
-          "🤖 Sorry, I couldn't find relevant information for that.",
-        timestamp: new Date(),
+        content: res.data.response || "No response from AI.",
       };
-      setMessages((prev) => [...prev, aiMessage]);
-    } catch (err) {
-      console.error("Chat error:", err);
+
+      setMessages((prev) => [...prev, botReply]);
+      setIsTyping(false);
+    } catch (error) {
+      console.error("Chat error:", error);
       setMessages((prev) => [
         ...prev,
-        {
-          role: "assistant",
-          content:
-            "⚠️ Sorry, I couldn't process your request. Please make sure the backend is running.",
-          timestamp: new Date(),
-        },
+        { role: "assistant", content: "⚠️ Something went wrong. Please try again." },
       ]);
-    } finally {
-      setLoading(false);
+      setIsTyping(false);
     }
   };
 
-  const handleKeyDown = (e) => {
-    if (e.key === "Enter" && !e.shiftKey) {
-      e.preventDefault();
-      sendMessage();
-    }
-  };
-
-  const toggleChat = () => setOpen(!open);
-
-  const formatTime = (time) =>
-    new Date(time).toLocaleTimeString([], {
+  const formatTime = () => {
+    return new Date().toLocaleTimeString("en-US", {
       hour: "2-digit",
       minute: "2-digit",
     });
+  };
 
   return (
-    <>
-      {/* 💬 Floating Toggle Button */}
-      <button
-        className="chat-toggle-btn"
-        onClick={toggleChat}
-        title={open ? "Close Chat Assistant" : "Open AI Assistant"}
-        aria-label={open ? "Close chat" : "Open chat"}
-      >
-        {open ? "✕" : "💬"}
-      </button>
-
-      {/* 🪄 Floating Chat Window */}
-      {open && (
-        <div
-          className="floating-chat-window"
-          role="dialog"
-          aria-label="Chat Assistant"
-        >
-          <div className="chat-header">
-            <div className="header-content">
-              <img
-                src="C:\Users\Sadumina.Rathnayaka\Desktop\scout agent frontend\scout-agent-frontend\src\assets\images.png"
-                alt="Haycarb AI"
-                className="chat-avatar"
-              />
-              <div>
-                <div className="chat-title">Haycarb AI Assistant</div>
-                <div className="subtext">
-                  Discuss <strong>{selectedProduct}</strong> insights
+    <div className="chat-assistant-wrapper">
+      {/* Chat Window */}
+      <div className={`chat-window ${isOpen ? "open" : "closed"}`}>
+        <div className="chat-container">
+          {/* Header */}
+          <div className="chat-header-pro">
+            <div className="header-left">
+              <div className="bot-avatar">
+                <Bot className="bot-icon" />
+              </div>
+              <div className="header-info">
+                <h3>Haycarb AI</h3>
+                <div className="status-indicator">
+                  <div className="status-dot"></div>
+                  <span>Online</span>
                 </div>
               </div>
             </div>
+            <div className="header-actions">
+              <button onClick={() => setIsOpen(false)} className="header-btn">
+                <Minimize2 size={20} />
+              </button>
+              <button onClick={() => setIsOpen(false)} className="header-btn">
+                <X size={20} />
+              </button>
+            </div>
           </div>
 
-          <div className="chat-body" role="log" aria-live="polite">
-            {messages.map((msg, i) => (
-              <div key={i} className={`message ${msg.role}`}>
-                {formatMessage(msg.content)}
-                <div className="meta">
-                  {msg.role === "user" ? "You" : "AI"} · {formatTime(msg.timestamp)}
+          {/* Messages Area */}
+          <div ref={chatRef} className="messages-container">
+            {messages.map((msg, index) => (
+              <div key={index} className={`message-wrapper ${msg.role}`}>
+                <div className={`message-avatar ${msg.role}`}>
+                  {msg.role === "user" ? (
+                    <User size={16} />
+                  ) : (
+                    <Bot size={16} />
+                  )}
+                </div>
+                <div className="message-content-wrapper">
+                  <div className={`message-bubble ${msg.role}`}>
+                    <p>{msg.content}</p>
+                  </div>
+                  <span className="message-time">{formatTime()}</span>
                 </div>
               </div>
             ))}
-
-            {loading && (
-              <div className="typing" role="status" aria-label="AI is typing">
-                <span>🤖 Thinking</span>
-                <div className="dots">
-                  <span></span>
-                  <span></span>
-                  <span></span>
+            
+            {/* Typing Indicator */}
+            {isTyping && (
+              <div className="message-wrapper assistant typing-indicator">
+                <div className="message-avatar assistant">
+                  <Bot size={16} />
+                </div>
+                <div className="message-bubble assistant">
+                  <div className="typing-dots">
+                    <div className="dot"></div>
+                    <div className="dot"></div>
+                    <div className="dot"></div>
+                  </div>
                 </div>
               </div>
             )}
-            <div ref={chatEndRef}></div>
           </div>
 
-          <div className="chat-input">
-            <input
-              ref={inputRef}
-              type="text"
-              placeholder={`Ask about ${selectedProduct}...`}
-              value={input}
-              onChange={(e) => setInput(e.target.value)}
-              onKeyDown={handleKeyDown}
-              disabled={loading}
-              aria-label="Chat message input"
-            />
-            <button
-              className="send-btn"
-              onClick={sendMessage}
-              disabled={loading || !input.trim()}
-              aria-label="Send message"
-            >
-              <i className="fa fa-paper-plane"></i>
-            </button>
+          {/* Input Area */}
+          <div className="input-container">
+            <div className="input-wrapper">
+              <input
+                ref={inputRef}
+                type="text"
+                placeholder={`Ask about ${selectedProduct}...`}
+                value={input}
+                onChange={(e) => setInput(e.target.value)}
+                onKeyDown={(e) => e.key === "Enter" && handleSend()}
+                className="chat-input"
+              />
+              <button
+                onClick={handleSend}
+                disabled={!input.trim()}
+                className="send-button"
+              >
+                <Send size={20} />
+              </button>
+            </div>
+            <p className="powered-by">Powered by Haycarb AI • Always here to help</p>
           </div>
         </div>
-      )}
-    </>
+      </div>
+
+      {/* Floating Action Button */}
+      <button
+        onClick={() => setIsOpen(!isOpen)}
+        className={`fab-button ${isOpen ? "hidden" : ""}`}
+      >
+        <div className="fab-glow"></div>
+        <div className="fab-content">
+          <MessageCircle size={28} />
+          <div className="notification-badge"></div>
+        </div>
+      </button>
+    </div>
   );
 }
-
-export default ChatAssistant;

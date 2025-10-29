@@ -176,7 +176,7 @@ function App() {
 
       <motion.div className="app-container" initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
         <motion.header className="header" initial={{ y: -40 }} animate={{ y: 0 }}>
-          <h1>🌍 HAYCARB Market Scout</h1>
+          <h1>HAYCARB Market Scout</h1>
           <p>Real-time environmental & market intelligence</p>
 
           <div className={`live-status ${liveConnected ? "connected" : "disconnected"}`}>
